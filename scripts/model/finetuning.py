@@ -92,5 +92,3 @@ class FineTune:
         trainer.train()
         trainer.save_model(OUTPUT_DIR)
 
-if __name__ == "__main__":
-    bot = MentalHealthChatbot()

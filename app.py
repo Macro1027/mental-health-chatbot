@@ -8,8 +8,6 @@ bot = MentalHealthChatbot(debugging=True)
 @cl.on_message
 async def handle_message(message: cl.Message):
     user_message = message.content
-    response = bot.ask(user_message)
+    response = bot.cbt_response(user_message)
     await cl.Message(response).send()
 
-if __name__ == "__main__":
-    cl.run()

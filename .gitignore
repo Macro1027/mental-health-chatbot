@@ -10,3 +10,5 @@ scripts/__pycache__
 
 .DS_STORE
 .vscode
+
+test.py

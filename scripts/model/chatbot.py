@@ -2,12 +2,15 @@ import os
 import torch
 import random
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForTokenClassification, AutoModelForSequenceClassification, pipeline
+from sklearn.metrics import accuracy_score
+from torch.utils.data import DataLoader
+import numpy as np
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
-TEXTGEN_MODEL = "meta-llama/Llama-2-7b-chat-hf"
+TEXTGEN_MODEL = "distilgpt2"
 SENTIMENT_MODEL = "cross-encoder/nli-roberta-base"
 NER_MODEL = "dslim/bert-large-NER"
 NER_THRESHOLD = 0.6
-
 
 def get_emotions():
     with open("data/external/emotions.txt", "r") as data:
@@ -20,12 +23,9 @@ class MentalHealthChatbot:
         self.debugging = debugging
         if self.debugging:
             print("Debugging is enabled.")
-
         self.emotions = get_emotions()
         self.textgen_model, self.textgen_tokenizer, self.sentiment_model, self.sentiment_tokenizer, self.ner_model, self.ner_tokenizer = self.initialize_models()
-        
 
-    # Step 1: Initialize and Load Models
     def initialize_models(self):
         model_dir = "saved_models"
         os.makedirs(model_dir, exist_ok=True)
@@ -33,14 +33,15 @@ class MentalHealthChatbot:
         # Load text gen model for response generation
         textgen_model_path = os.path.join(model_dir, "textgen_model")
         textgen_tokenizer_path = os.path.join(model_dir, "textgen_tokenizer")
+
         if os.path.exists(textgen_model_path) and os.path.exists(textgen_tokenizer_path):
-            textgen_model = AutoModelForCausalLM.from_pretrained(textgen_model_path)
-            textgen_tokenizer = AutoTokenizer.from_pretrained(textgen_tokenizer_path)
+            textgen_model = AutoModelForCausalLM.from_pretrained(textgen_model_path, low_cpu_mem_usage=True)
+            textgen_tokenizer = AutoTokenizer.from_pretrained(textgen_tokenizer_path, low_cpu_mem_usage=True)
             if self.debugging:
                 print(f"Loaded textgen model and tokenizer from local storage {TEXTGEN_MODEL}.")
         else:
-            textgen_model = AutoModelForCausalLM.from_pretrained(TEXTGEN_MODEL, token=True)
-            textgen_tokenizer = AutoTokenizer.from_pretrained(TEXTGEN_MODEL, token=True)
+            textgen_model = AutoModelForCausalLM.from_pretrained(TEXTGEN_MODEL)
+            textgen_tokenizer = AutoTokenizer.from_pretrained(TEXTGEN_MODEL, low_cpu_mem_usage=True)
             textgen_model.save_pretrained(textgen_model_path)
             textgen_tokenizer.save_pretrained(textgen_tokenizer_path)
             if self.debugging:
@@ -49,6 +50,7 @@ class MentalHealthChatbot:
         # Load model for sentiment analysis
         sentiment_model_path = os.path.join(model_dir, "sentiment_model")
         sentiment_tokenizer_path = os.path.join(model_dir, "sentiment_tokenizer")
+
         if os.path.exists(sentiment_model_path) and os.path.exists(sentiment_tokenizer_path):
             sentiment_model = AutoModelForSequenceClassification.from_pretrained(sentiment_model_path)
             sentiment_tokenizer = AutoTokenizer.from_pretrained(sentiment_tokenizer_path)
@@ -65,6 +67,7 @@ class MentalHealthChatbot:
         # Load NER model
         ner_model_path = os.path.join(model_dir, "ner_model")
         ner_tokenizer_path = os.path.join(model_dir, "ner_tokenizer")
+
         if os.path.exists(ner_model_path) and os.path.exists(ner_tokenizer_path):
             ner_model = AutoModelForTokenClassification.from_pretrained(ner_model_path)
             ner_tokenizer = AutoTokenizer.from_pretrained(ner_tokenizer_path)
@@ -80,7 +83,6 @@ class MentalHealthChatbot:
 
         return textgen_model, textgen_tokenizer, sentiment_model, sentiment_tokenizer, ner_model, ner_tokenizer
 
-    # Step 2: Define Helper Functions
     def generate_response(self, input_text):
         if self.debugging:
             print(f"Generating response for input: {input_text}")
@@ -89,17 +91,14 @@ class MentalHealthChatbot:
         inputs = self.textgen_tokenizer(input_text, return_tensors='pt')
 
         # Generate outputs
-        outputs = self.textgen_model(**inputs)
-
-        # Get the token ids from the output
-        token_ids = outputs[0].argmax(-1)
+        outputs = self.textgen_model.generate(**inputs, max_length=150)
 
         # Decode the token ids back into text
-        response = self.textgen_tokenizer.decode(token_ids[0])
-        
+        response = self.textgen_tokenizer.decode(outputs[0], skip_special_tokens=True)
+
         if self.debugging:
             print(f"Generated response: {response}")
-        
+
         return response
 
     def analyze_sentiment(self, input_text):
@@ -117,35 +116,33 @@ class MentalHealthChatbot:
 
         # Run the model
         outputs = self.sentiment_model(**inputs)
-        logits = outputs.logits
 
         # Convert logits to probabilities
-        probs = torch.softmax(logits, dim=1)
+        probs = torch.softmax(outputs.logits, dim=1)
         entailment_probs = probs[:, 2]
 
         # Find the label with the highest probability
         sentiments_idx = torch.topk(entailment_probs, 3).indices
         sentiments = [self.emotions[idx] for idx in sentiments_idx]
-        
+
         if self.debugging:
             print(f"Sentiment analysis result: {sentiments}")
-        
+
         return sentiments
 
     def recognize_entities(self, input_text):
         if self.debugging:
             print(f"Recognizing entities in text: {input_text}")
 
-        entity_recognition = pipeline("ner", model=self.ner_model, tokenizer=self.ner_tokenizer)
+        entity_recognition = pipeline("ner", model=self.ner_model, tokenizer=self.ner_tokenizer, device=0)
         entities = entity_recognition(input_text)
-
         entities = self.format_NER(entities)
-        
+
         if self.debugging:
             print(f"Recognized entities: {entities}")
-        
+
         return entities
-    
+
     def format_NER(self, ner_results):
         # Organize results by entity type
         entities_by_type = {}
@@ -181,31 +178,29 @@ class MentalHealthChatbot:
 
         # Analyze sentiment
         sentiments = self.analyze_sentiment(input_text)
-        
+
         # Recognize entities
         entities = self.recognize_entities(input_text)
-        
 
         # Define the prompt with CBT context
         prompt = f"""
         You are a mental health chatbot that uses Cognitive Behavioral Therapy (CBT) techniques to help users. Respond to the following input with appropriate CBT techniques:
+        Based on this context:
+        The user feels {sentiments}, recognized entities are {entities},
+        ---------------
 
-        User: {input_text},
-        Emotions: {sentiments},
-        Recognized entities: {entities},
-        Chatbot:
+        Answer the query: {input_text},
         """
 
         # Generate response
         response = self.generate_response(prompt)
 
         top_emotions = ' and '.join(sentiments[:2])
-        print(f"I recognise that you are feeling {top_emotions}")
+        print(f"I recognize that you are feeling {top_emotions}")
         print(response)
 
         return response
-    
-    # Additional functions
+
     def provide_cbt_techniques(self, input_text):
         if self.debugging:
             print(f"Providing CBT techniques for input: {input_text}")
@@ -253,13 +248,13 @@ class MentalHealthChatbot:
         if cbt_response:
             response = cbt_response
             print(response)
-        
+
         # Guide mindfulness exercises if applicable
         mindfulness_response = self.guide_mindfulness_exercises(user_input)
         if mindfulness_response:
             response = mindfulness_response
             print(response)
-        
+
         # Manage crisis situations if detected
         crisis_response = self.manage_crisis_situations(user_input)
         if crisis_response:
@@ -273,7 +268,6 @@ class MentalHealthChatbot:
         self.handle_rlhf(feedback)
 
 if __name__ == "__main__":
-    bot = MentalHealthChatbot(debugging=True)
+    bot = MentalHealthChatbot()
     prompt = "My name is Wolfgang and I live in Berlin. I work at Google."
-    # bot.cbt_response(prompt)
-
+    bot.cbt_response(prompt)
