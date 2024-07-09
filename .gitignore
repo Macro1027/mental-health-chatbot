@@ -13,4 +13,4 @@ scripts/__pycache__
 
 test.py
 
-scripts/whatsapp/.env
+scripts/whatsapp/
