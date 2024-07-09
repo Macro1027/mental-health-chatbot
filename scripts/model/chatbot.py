@@ -5,9 +5,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModelForTokenC
 from sklearn.metrics import accuracy_score
 from torch.utils.data import DataLoader
 import numpy as np
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 
-TEXTGEN_MODEL = "distilgpt2"
+TEXTGEN_MODEL = "meta-llama/Llama-2-7b-chat-hf"
 SENTIMENT_MODEL = "cross-encoder/nli-roberta-base"
 NER_MODEL = "dslim/bert-large-NER"
 NER_THRESHOLD = 0.6
@@ -35,6 +34,7 @@ class MentalHealthChatbot:
         textgen_tokenizer_path = os.path.join(model_dir, "textgen_tokenizer")
 
         if os.path.exists(textgen_model_path) and os.path.exists(textgen_tokenizer_path):
+            print("Model already exists, loading from storage.")
             textgen_model = AutoModelForCausalLM.from_pretrained(textgen_model_path, low_cpu_mem_usage=True)
             textgen_tokenizer = AutoTokenizer.from_pretrained(textgen_tokenizer_path, low_cpu_mem_usage=True)
             if self.debugging:
@@ -82,24 +82,6 @@ class MentalHealthChatbot:
                 print(f"Downloaded and saved NER model and tokenizer {NER_MODEL}.")
 
         return textgen_model, textgen_tokenizer, sentiment_model, sentiment_tokenizer, ner_model, ner_tokenizer
-
-    def generate_response(self, input_text):
-        if self.debugging:
-            print(f"Generating response for input: {input_text}")
-
-        # Tokenize input text
-        inputs = self.textgen_tokenizer(input_text, return_tensors='pt')
-
-        # Generate outputs
-        outputs = self.textgen_model.generate(**inputs, max_length=150)
-
-        # Decode the token ids back into text
-        response = self.textgen_tokenizer.decode(outputs[0], skip_special_tokens=True)
-
-        if self.debugging:
-            print(f"Generated response: {response}")
-
-        return response
 
     def analyze_sentiment(self, input_text):
         if self.debugging:
@@ -192,8 +174,12 @@ class MentalHealthChatbot:
         Answer the query: {input_text},
         """
 
+        prompt = f"what is your name?"
+        
         # Generate response
-        response = self.generate_response(prompt)
+        inputs = self.textgen_tokenizer.encode(input_text, return_tensors='pt')
+        outputs = self.textgen_model.generate(inputs, max_length=256)
+        response = self.textgen_tokenizer.decode(outputs[0], skip_special_tokens=True)
 
         top_emotions = ' and '.join(sentiments[:2])
         print(f"I recognize that you are feeling {top_emotions}")
@@ -267,7 +253,8 @@ class MentalHealthChatbot:
         # Handle RLHF
         self.handle_rlhf(feedback)
 
+
 if __name__ == "__main__":
-    bot = MentalHealthChatbot()
-    prompt = "My name is Wolfgang and I live in Berlin. I work at Google."
+    bot = MentalHealthChatbot(debugging=True)
+    prompt = "What is depression?"
     bot.cbt_response(prompt)
