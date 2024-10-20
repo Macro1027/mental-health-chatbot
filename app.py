@@ -1,4 +1,4 @@
-from scripts.model.chatbot import MentalHealthChatbot
+from scripts.chatbot import MentalHealthChatbot
 from scripts.api.instant_messaging import Messenger
 from scripts.model.rlhf import AdaptiveLearning
 import chainlit as cl

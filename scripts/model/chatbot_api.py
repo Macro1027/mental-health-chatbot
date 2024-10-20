@@ -14,5 +14,6 @@ class ChatbotAPI:
     
 
 if __name__ == "__main__":
-    bot = ChatbotAPI("meta-llama/Meta-Llama-3-70B-Instruct")
-    print(bot.query({'inputs': "write me a python program to reverse a list", "task": "text-generation"})[0]['generated_text'])
+    bot = ChatbotAPI("google/gemma-2b")
+    inputs = "hello, how do I overcome depression"
+    print(bot.query({'inputs': inputs})[0]['generated_text'])

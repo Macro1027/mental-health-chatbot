@@ -3,7 +3,7 @@ from datasets import load_dataset
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, TrainingArguments, GenerationConfig
 from peft import LoraConfig, get_peft_model, PeftConfig, PeftModel, prepare_model_for_kbit_training
 from trl import SFTTrainer
-from .chatbot import MentalHealthChatbot
+from ..chatbot import MentalHealthChatbot
 
 OUTPUT_DIR = "meta-llama-finetuned"
 

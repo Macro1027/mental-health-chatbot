@@ -1,0 +1,222 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<html>
+  <head>
+    <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin="" />
+    <link
+      rel="stylesheet"
+      as="style"
+      onload="this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?display=swap&amp;family=Inter%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900"
+    />
+
+    <title>MindMend</title>
+    <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64," />
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  </head>
+  <body>
+    <div
+      class="relative flex size-full min-h-screen flex-col bg-[#FFFFFF] justify-between group/design-root overflow-x-hidden"
+      style='font-family: Inter, "Noto Sans", sans-serif;'
+    >
+      <div>
+        <div class="flex items-center bg-[#FFFFFF] p-4 pb-2 justify-between">
+          <h2 class="text-[#141414] text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pl-12">Mood Tracker</h2>
+          <div class="flex w-12 items-center justify-end"><p class="text-neutral-500 text-base font-bold leading-normal tracking-[0.015em] shrink-0">Share</p></div>
+        </div>
+
+        <div class="flex items-center bg-[#FFFFFF] p-4 pb-2 justify-center">
+            <p class="text-[#141414] tracking-light text-[28px] leading-tight" id="date-container"></p>
+        </div>
+
+        <h2 class="text-[#141414] text-[22px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5">How are you feeling?</h2>
+        <div class="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 p-4">
+          <div class="emotion-card flex flex-1 gap-3 rounded-lg border border-[#E0E0E0] bg-[#006400] p-4 flex-col" data-emotion="Excellent"> <!-- Dark Green -->
+            <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg w-10 shrink-0" style='background-image: url("https://cdn.usegalileo.ai/sdxl10/df63813d-47c5-44e3-a1eb-8d3a1e034154.png");'></div>
+            <div class="flex flex-col gap-1">
+              <h2 class="text-[#FFFFFF] text-base font-bold leading-tight">Excellent</h2>
+              <p class="text-[#FFFFFF] text-sm font-normal leading-normal">Amazing</p>
+            </div>
+          </div>
+
+          <div class="emotion-card flex flex-1 gap-3 rounded-lg border border-[#E0E0E0] bg-[#90EE90] p-4 flex-col" data-emotion="Good"> <!-- Light Green -->
+            <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg w-10 shrink-0" style='background-image: url("https://cdn.usegalileo.ai/sdxl10/b3011b8f-4cc4-42a9-bf0d-58e83116197f.png");'></div>
+            <div class="flex flex-col gap-1">
+              <h2 class="text-[#FFFFFF] text-base font-bold leading-tight">Average</h2>
+              <p class="text-[#FFFFFF] text-sm font-normal leading-normal">Good</p>
+            </div>
+          </div>
+
+          <div class="emotion-card flex flex-1 gap-3 rounded-lg border border-[#E0E0E0] bg-[#f7da45] p-4 flex-col" data-emotion="Mediocre"> <!-- Yellow -->
+            <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg w-10 shrink-0" style='background-image: url("https://cdn.usegalileo.ai/sdxl10/bbad3cc3-3861-427f-b849-986dec52749a.png");'></div>
+            <div class="flex flex-col gap-1">
+              <h2 class="text-[#FFFFFF] text-base font-bold leading-tight">Poor</h2>
+              <p class="text-[#FFFFFF] text-sm font-normal leading-normal">Mediocre</p>
+            </div>
+          </div>
+
+          <div class="emotion-card flex flex-1 gap-3 rounded-lg border border-[#E0E0E0] bg-[#FFA500] p-4 flex-col" data-emotion="Bad"> <!-- Orange -->
+            <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg w-10 shrink-0" style='background-image: url("https://cdn.usegalileo.ai/sdxl10/5989eaeb-d6cf-4792-b213-f993eca2a594.png");'></div>
+            <div class="flex flex-col gap-1">
+              <h2 class="text-[#FFFFFF] text-base font-bold leading-tight">Terrible</h2>
+              <p class="text-[#FFFFFF] text-sm font-normal leading-normal">Bad</p>
+            </div>
+          </div>
+
+          <div class="emotion-card flex flex-1 gap-3 rounded-lg border border-[#E0E0E0] bg-[#FF0000] p-4 flex-col" data-emotion="Awful"> <!-- Red -->
+            <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-lg w-10 shrink-0" style='background-image: url("https://cdn.usegalileo.ai/sdxl10/607466f9-5244-4ad6-b8f3-761f803e6534.png");'></div>
+            <div class="flex flex-col gap-1">
+              <h2 class="text-[#FFFFFF] text-base font-bold leading-tight">Subpar</h2>
+              <p class="text-[#FFFFFF] text-sm font-normal leading-normal">Awful</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit Button Section -->
+      <div class="flex justify-center px-4 py-3">
+        <button
+          class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-5 bg-[#39E079] text-[#141414] text-base font-bold leading-normal tracking-[0.015em]"
+        >
+          <span class="truncate">Submit</span>
+        </button>
+      </div>
+
+      <!-- Spacer -->
+      <div class="h-5 bg-[#FFFFFF]"></div>
+
+      {% include 'menu.html' %}
+
+    </div>
+  </body>
+</html>
+
+<script>
+    // Function to get the current date and time
+    function getCurrentDateAndTime() {
+    const dateTime = new Date();
+    return dateTime.toLocaleString();
+    }
+
+    // Target an HTML element to display the current date and time
+    const dateDisplay = document.getElementById("date-container");
+
+    // Set the innerHTML of the element to the current date and time returned by the function
+    dateDisplay.innerHTML = getCurrentDateAndTime();
+
+    let selectedEmotion = null; // Variable to store the selected emotion
+
+    // Add event listeners to each emotion card
+    document.querySelectorAll('.emotion-card').forEach(card => {    
+    card.addEventListener('click', function() {
+        // Remove 'selected' class from all cards
+        document.querySelectorAll('.emotion-card').forEach(c => c.classList.remove('selected'));
+        
+        // Add 'selected' class to the clicked card
+        this.classList.add('selected');
+        
+        // Store the selected emotion
+        selectedEmotion = this.getAttribute('data-emotion');
+        console.log("hi");
+    });
+    });
+
+    // Submit button logic
+    document.querySelector('button').addEventListener('click', function() {
+      if (!selectedEmotion) {
+          alert("Please select an emotion before submitting.");
+          return; // Exit if no emotion is selected
+      }
+
+      const user_id = 1;
+      const currentDate = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+      
+      fetch('/submit-emotion', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ user_id, emotion: selectedEmotion, date: currentDate })
+      })
+      .then(response => response.json())
+      .then(data => {
+          console.log('Emotion recorded:', data);
+      })
+      .catch(error => console.error('Error:', error));
+
+      fetch(`/get-emotions?user_id=${user_id}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+          console.log(data);
+          // Assuming data is in format [{emotion: 'Happy', count: 5}, ...]
+          
+          const emotions = Object.keys(data); // Get emotion names (keys)
+          const counts = Object.values(data); // Get counts (values)
+
+          // Define order and corresponding colors
+          const emotionOrder = ["Excellent", "Good", "Mediocre", "Bad", "Awful"];
+          const emotionColors = {
+              "Excellent": "#006400",  // Dark Green
+              "Good": "#90EE90",       // Light Green
+              "Mediocre": "#f7da45",   // Yellow
+              "Bad": "#FFA500",        // Orange
+              "Awful": "#FF0000"       // Red
+          };
+
+          // Create an ordered array based on emotionOrder
+          const orderedEmotions = emotionOrder.filter(emotion => emotions.includes(emotion));
+          const orderedCounts = orderedEmotions.map(emotion => counts[emotions.indexOf(emotion)]);
+    
+          // Prepare background colors based on ordered emotions
+          const backgroundColors = orderedEmotions.map(emotion => emotionColors[emotion]);
+
+          // Check if canvas already exists; if not, create it
+          let canvas = document.getElementById('myChart');
+            if (!canvas) {
+                canvas = document.createElement('canvas'); // Create a new canvas element
+                canvas.id = 'myChart'; // Set the ID for future reference
+                canvas.width = 320; 
+                canvas.height = 160; 
+
+                // Append the canvas to a specific location in your HTML (e.g., below your submit button)
+                document.querySelector('.flex.justify-center.px-4.py-3').insertAdjacentElement('afterend', canvas);
+            }
+
+            // Clear any existing chart before creating a new one
+            if (window.chart) {
+                window.chart.destroy(); // Destroy previous chart instance if it exists
+            }
+
+            const ctx = canvas.getContext('2d');
+            window.chart = new Chart(ctx, {
+              type: 'bar',
+              data: {
+                  labels: emotionOrder,
+                  datasets: [{
+                      label: 'Emotions Count',
+                      data: orderedCounts,
+                      backgroundColor: backgroundColors,
+                  }]
+                },
+                options: {
+                  layout: {
+                      padding: 120
+                  },
+                  plugins: {
+                      title: {
+                          display: true,
+                          text: 'Emotions this month'
+                      }
+                  }
+                }
+              });
+          })
+        .catch(error => console.error('Error:', error));
+    });
+</script>
